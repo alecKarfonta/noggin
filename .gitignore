@@ -1,0 +1,19 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Editor dirs
+.vscode/
+.idea/
+
+# Logs / temp
+*.log
+*.tmp
+node_modules/
+
+# Local-only scratch files
+scratch/
+*.local.html
