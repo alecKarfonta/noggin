@@ -1,0 +1,39 @@
+name: noggin
+namespace: noggin
+
+build:
+  compose_file: docker-compose.yml
+  service: app
+  homelab:
+    image: docker.io/library/noggin-app:local
+    delivery: import
+    registry:
+      repo: noggin/noggin
+      tag: local
+  registry:
+    image: ghcr.io/aleckarfonta/noggin
+    tag: latest
+    push: true
+
+k8s:
+  deployment: app
+  default_overlay: homelab
+  overlays:
+    homelab:
+      import_nodes: homelab/cpu-tier=cheap
+    production: {}
+
+verify:
+  - url: http://127.0.0.1:31019/health
+    description: local health check
+  - url: https://mlapi.us/noggin/health
+    description: edge health check
+    expect_status: 200
+
+nginx:
+  name: noggin
+  host: auto
+  service: app
+  service_port: http
+  upstreams:
+    host196_noggin_api: 31019

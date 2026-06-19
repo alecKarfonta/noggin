@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: noggin
+  labels:
+    app.kubernetes.io/name: noggin
+    app.kubernetes.io/part-of: noggin

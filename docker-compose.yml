@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    image: noggin-app:local
+    ports:
+      - "31019:31019"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:31019/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+  labels:
+    app: noggin
+    app.kubernetes.io/name: noggin
+    app.kubernetes.io/part-of: noggin
+spec:
+  type: LoadBalancer
+  selector:
+    app: noggin
+  ports:
+    - name: http
+      port: 31019
+      targetPort: http

@@ -1,0 +1,8 @@
+# Ship only what the image needs: synapse.html + nginx config.
+k8s/
+scripts/
+README.md
+.git/
+.gitignore
+system.yaml
+*.md

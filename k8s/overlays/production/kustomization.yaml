@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+images:
+  - name: ghcr.io/aleckarfonta/noggin
+    newName: ghcr.io/aleckarfonta/noggin
+    newTag: latest
+
+patches:
+  - path: ingress-patch.yaml

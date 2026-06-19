@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: noggin
+  labels:
+    app.kubernetes.io/name: noggin
+    app.kubernetes.io/part-of: noggin
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: mlapi.us
+      http:
+        paths:
+          - path: /noggin
+            pathType: Prefix
+            backend:
+              service:
+                name: app
+                port:
+                  number: 31019
