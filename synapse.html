@@ -113,6 +113,25 @@ function text(str,x,y,size,color,align='center',weight=800,font='system-ui,-appl
 }
 const MONO = 'ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';
 
+/* Word-wrap a string into lines whose measured width fits maxWidth.
+   Greedy: packs as many words as fit per line. ctx font must already be set. */
+function wrapText(str, maxWidth){
+  const words = str.split(/\s+/);
+  const lines = [];
+  let cur = '';
+  for(const w of words){
+    const trial = cur ? cur + ' ' + w : w;
+    if(ctx.measureText(trial).width > maxWidth && cur){
+      lines.push(cur);
+      cur = w;
+    } else {
+      cur = trial;
+    }
+  }
+  if(cur) lines.push(cur);
+  return lines;
+}
+
 /* ---------- shared UI: glassy panels & buttons ---------- */
 /* Draws a rounded panel with a vertical gradient, soft outer glow, top inner highlight, and bottom shadow line. */
 function panel(x,y,w,h,r,opts){
@@ -1652,16 +1671,16 @@ const VisualSearch = {
   draw(){
     // target prompt
     panel(60, 380, LW-120, 70, 16, {fill0:COL.blue,fill1:COL.void,fillA:0.25,stroke:COL.blue,strokeA:0.4,glow:0});
-    text('TARGET', 110, 415, 18, COL.muted,'left',700,'system-ui',2);
+    text('TARGET', 88, 415, 18, COL.muted,'left',700,'system-ui',2);
     ctx.save();
     ctx.globalCompositeOperation='lighter';
     ctx.font = `900 44px system-ui,sans-serif`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillStyle = hexA(this.targetColor, 0.3);
-    for(let r=0;r<2;r++) ctx.fillText(this.targetShape, 200, 415);
+    for(let r=0;r<2;r++) ctx.fillText(this.targetShape, 180, 415);
     ctx.restore();
-    text(this.targetShape, 200, 415, 44, this.targetColor,'center',900,'system-ui');
-    text('find all  '+this.left+'  remaining', LW-110, 415, 22, COL.mist,'right',700,'system-ui',1);
+    text(this.targetShape, 180, 415, 44, this.targetColor,'center',900,'system-ui');
+    text('find all  '+this.left+'  remaining', LW-88, 415, 22, COL.mist,'right',700,'system-ui',1);
 
     for(const it of this.items){
       if(it.done) continue;
@@ -2593,23 +2612,30 @@ const Game = {
       ctx.restore();
       text(String(i+1), x+24, y+25, 16, '#06121a','center',900,MONO);
       // game name (hero)
-      text(g.name, x+bw/2, y+48, 28, COL.mist,'center',800,'system-ui');
-      // single concise hint line
-      text(g.hint, x+bw/2, y+82, 17, COL.muted,'center',600,'system-ui');
+      text(g.name, x+bw/2, y+44, 26, COL.mist,'center',800,'system-ui');
+      // hint, wrapped to fit the card width
+      ctx.font = `600 15px system-ui`;
+      const hintLines = wrapText(g.hint, bw - 28);
+      const hintY = y + 76;
+      const hintLH = 18;
+      hintLines.forEach((ln, i) => {
+        text(ln, x+bw/2, hintY + i*hintLH, 15, COL.muted,'center',600,'system-ui');
+      });
       // domain dot chips (visual, not verbose text)
       const doms = (g.domains||[]);
       const chipR=4, chipGap=14;
       const chipTotalW = doms.length*chipGap;
       let chipX = x+bw/2 - chipTotalW/2 + chipR;
+      const chipY = y + bh - 26;
       for(const d of doms){
         const dc = {memory:COL.violet,attention:COL.amber,speed:COL.cyan,reasoning:COL.blue,language:COL.pink,executive:COL.green}[d]||COL.muted;
         ctx.fillStyle = hexA(dc, 0.9);
-        ctx.beginPath(); ctx.arc(chipX, y+104, chipR, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(chipX, chipY, chipR, 0, Math.PI*2); ctx.fill();
         chipX += chipGap;
       }
       // per-game best score tucked in corner
       if(best>0){
-        text('★ '+best.toLocaleString(), x+bw-16, y+118, 14, hexA(COL.amber,0.95),'right',800,MONO);
+        text('★ '+best.toLocaleString(), x+bw-14, y+18, 13, hexA(COL.amber,0.95),'right',800,MONO);
       }
     });
 
@@ -2683,13 +2709,13 @@ const Game = {
       text('COMBO', LW/2, 152+sz*0.5+12, 16, hexA(col,0.85),'center',700,'system-ui',3);
     }
 
-    // game name strip
-    text(this.current.name, LW/2, 244, 24, hexA(COL.mist,0.45),'center',800,'system-ui',3);
+    // game name strip — sits below the score/round panels (which end at ~y=192)
+    text(this.current.name, LW/2, 230, 24, hexA(COL.mist,0.45),'center',800,'system-ui',3);
   },
 
   drawPauseBtn(){
-    // small II button top-center under the timer, only when keyboard or always (tap to pause)
-    const bw=64, bh=36, bx=LW/2-bw/2, by=200;
+    // small II button tucked between the score & round panels (clear gap at center)
+    const bw=64, bh=36, bx=LW/2-bw/2, by=148-bh/2;
     this._pauseBtn={x:bx,y:by,w:bw,h:bh};
     panel(bx,by,bw,bh,10,{fill0:COL.blue,fill1:COL.void,fillA:0.35,stroke:COL.blue,strokeA:0.4,glow:0});
     // two bars
@@ -2757,13 +2783,10 @@ const Game = {
 
     if(c>0 && this.introT>0.05){
       const s = 1 + (1-(this.introT%1))*0.5;
-      // glow halo behind name
+      // glow halo behind name (same spacing as the title so it lines up)
       ctx.save();
       ctx.globalCompositeOperation='lighter';
-      ctx.font = `900 44px system-ui,sans-serif`;
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillStyle = hexA(accent, 0.20);
-      for(let r=0;r<3;r++) ctx.fillText(this.current.name, LW/2, 500);
+      for(let r=0;r<3;r++) text(this.current.name, LW/2, 500, 44, hexA(accent, 0.20),'center',900,'system-ui',3);
       ctx.restore();
       text(this.current.name, LW/2, 500, 44, accent,'center',900,'system-ui',3);
       // TRAINS tagline
@@ -2782,10 +2805,7 @@ const Game = {
       // GO burst
       ctx.save();
       ctx.globalCompositeOperation='lighter';
-      ctx.font = `900 180px system-ui,sans-serif`;
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillStyle = hexA(accent, 0.30);
-      for(let r=0;r<4;r++) ctx.fillText('GO', LW/2, 720);
+      for(let r=0;r<4;r++) text('GO', LW/2, 720, 180, hexA(accent, 0.30),'center',900,'system-ui',4);
       ctx.restore();
       text('GO', LW/2, 720, 180, accent,'center',900,'system-ui',4);
     }
@@ -2796,10 +2816,7 @@ const Game = {
     ctx.fillStyle=hexA('#05060f',0.55); ctx.fillRect(0,0,LW,LH);
     ctx.save();
     ctx.globalCompositeOperation='lighter';
-    ctx.font = `900 56px system-ui,sans-serif`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillStyle = hexA(COL.cyan, 0.2*a);
-    for(let r=0;r<3;r++) ctx.fillText('ROUND CLEAR', LW/2, 600);
+    for(let r=0;r<3;r++) text('ROUND CLEAR', LW/2, 600, 56, hexA(COL.cyan, 0.2*a),'center',900,'system-ui',2);
     ctx.restore();
     text('ROUND CLEAR', LW/2, 600, 56, COL.cyan,'center',900,'system-ui',2);
     text('SCORE  '+this.score.toLocaleString(), LW/2, 680, 38, COL.mist,'center',800,MONO);
